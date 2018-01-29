@@ -4,13 +4,13 @@ import copy
 
 
 class Solver_8_queens:
-    def __init__(self, pop_size=100, cross_prob=0.75, mut_prob=0.5):
+    def __init__(self, pop_size=150, cross_prob=0.75, mut_prob=0.05):
         random.seed()
         self.pop_size = pop_size
         self.cross_prob = cross_prob
         self.mut_prob = mut_prob
 
-    def solve(self, min_fitness=1, max_epochs=100):
+    def solve(self, min_fitness=1, max_epochs=200):
         best_fit = 0
         epoch_num = 0
         visualization = ''
@@ -35,11 +35,12 @@ class Solver_8_queens:
         return best_fit, epoch_num, visualization
 
     def next_generation(self):
-        print('next generation')
         self.roullete_selection()
+        for ind in self.population:
+            if (random.random() > self.mut_prob):
+                ind.mutation()
 
     def find_best_individ(self):
-        print('find best')
         best_fit = 0;
         for ind in self.population:
             fit = ind.get_fitness()
@@ -50,7 +51,6 @@ class Solver_8_queens:
 
     def roullete_selection(self):
         results_population = []
-        print('calculate fintnesses')
         fitnesses = []
         fit_sum = 0;
         for ind in self.population:
@@ -58,7 +58,6 @@ class Solver_8_queens:
             fitnesses.append(fit)
             fit_sum += fit
 
-        print('selection')
         for num in range(len(self.population)):
             rand_pos = random.random() * fit_sum
             s = 0
@@ -70,18 +69,6 @@ class Solver_8_queens:
 
         self.population.clear()
         self.population = copy.copy(results_population)
-
-
-    def roullete_select_individ(self):
-        rand_pos = random.random() * fit_sum
-        s = 0
-        for fit in fitnesses:
-            s += fit
-            if s > rand_pos:
-                results_population.append(self.population[num])
-                break
-
-
 
 class Individ:
     def __init__(self):
@@ -127,3 +114,13 @@ class Individ:
         queen_positions = self.get_queens_positions()
         visualisation = '\n'.join(self.queen_pos_to_line(q) for q in queen_positions)
         return visualisation
+
+    def mutation(self):
+        genome = list(self.genome)
+        bit_num = random.randint(0, len(genome) - 1)
+        if genome[bit_num] == '0':
+            genome[bit_num] = '1'
+        else:
+            genome[bit_num] = '0'
+
+        self.genome = ''.join(genome)
