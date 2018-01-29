@@ -25,13 +25,13 @@ class Solver_8_queens:
         while True:
             epoh_num += 1
 
-            self.__next_generation()
+            self.next_generation()
 
             self.population.clear()
             self.population = copy.copy(self.next_population)
             self.next_population.clear()
 
-            best_fit, visualisation = self.__find_max()
+            best_fit, visualisation = self.find_max()
 
             if min_fitness != None:
                 if best_fit >= min_fitness:
@@ -42,7 +42,7 @@ class Solver_8_queens:
 
         return best_fit, epoh_num, visualisation
 
-    def __roulette_selection(self):
+    def roulette_selection(self):
         prob = random.random()
         prob_sum = 0
         for individ in self.population:
@@ -50,7 +50,7 @@ class Solver_8_queens:
             if prob_sum > prob:
                 return individ
 
-    def __next_generation(self):
+    def next_generation(self):
         self.fit_sum = 0
         for individ in self.population:
             self.fit_sum += individ.fitness
@@ -58,11 +58,11 @@ class Solver_8_queens:
         count = 0
         self.next_population = []
         while count < self.pop_size:
-            individ = copy.deepcopy(self.__roulette_selection())
+            individ = copy.deepcopy(self.roulette_selection())
             self.next_population.append(individ)
 
             if random.random() <= self.cross_prob:
-                spouse = copy.deepcopy(self.__roulette_selection())
+                spouse = copy.deepcopy(self.roulette_selection())
                 individ.crossing_over(spouse)
 
                 if random.random() <= self.mut_prob:
@@ -77,7 +77,7 @@ class Solver_8_queens:
             self.next_population.append(individ)
             count += 1
 
-    def __find_max(self):
+    def find_max(self):
         max_fitness = 0
         for individ in self.population:
             if individ.fitness > max_fitness:
@@ -94,7 +94,7 @@ class Individ:
             gene = '{:03b}'.format(random.randint(0, 7))
             self.queens.append(gene)
             self.genome += gene
-        self.__calculate_fitness()
+        self.calculate_fitness()
 
     def get_queens_bin(self):
         queen_positions = []
@@ -103,7 +103,7 @@ class Individ:
             queen_positions.append(gene)
         return queen_positions
 
-    def __get_queens_pos(self):
+    def get_queens_pos(self):
         genes = self.get_queens_bin()
         queens = []
         for gene in genes:
@@ -111,8 +111,8 @@ class Individ:
             queens.append(pos)
         return queens
 
-    def __calculate_fitness(self):
-        queens = self.__get_queens_pos()
+    def calculate_fitness(self):
+        queens = self.get_queens_pos()
         penalty_score = 0
 
         for i in range(7):
@@ -136,7 +136,7 @@ class Individ:
         return line
 
     def get_visualisation(self):
-        queen_positions = self.__get_queens_pos()
+        queen_positions = self.get_queens_pos()
         visualisation = '\n'.join(self.queen_pos_to_string_line(q) for q in queen_positions)
         return visualisation
 
@@ -152,7 +152,7 @@ class Individ:
             gene[bit_num] = '1'
         queens[gene_num] = ''.join(gene)
         self.genome = ''.join(queens)
-        self.__calculate_fitness()
+        self.calculate_fitness()
 
     def crossing_over(self, spouse):
         bit_num = random.randint(1, 23)
@@ -163,5 +163,5 @@ class Individ:
         self.genome = genome1[:bit_num] + genome2[bit_num:]
         spouse.genome = genome2[:bit_num] + genome1[bit_num:]
 
-        spouse.__calculate_fitness()
-        self.__calculate_fitness()
+        spouse.calculate_fitness()
+        self.calculate_fitness()
