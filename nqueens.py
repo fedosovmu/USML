@@ -1,150 +1,153 @@
-import random
-
 import copy
+
+import random
 
 
 class Solver_8_queens:
-    def __init__(self, pop_size=150, cross_prob=0.5, mut_prob=0.5):
-        random.seed()
+    def __init__(self, pop_size=150, cross_prob=0.75, mut_prob=0.5):
         self.pop_size = pop_size
         self.cross_prob = cross_prob
         self.mut_prob = mut_prob
 
-    def solve(self, min_fitness=1, max_epochs=500):
-        best_fit = 0
-        epoch_num = 0
-        visualization = ''
+    def solve(self, min_fitness=1, max_epohs=250):
+        if self.pop_size == 0:
+            return 0, 0, ""
 
-        # initialization
         self.population = []
         for i in range(self.pop_size):
             individ = Individ()
             self.population.append(individ)
 
-        best_fit = self.find_best_individ().get_fitness()
+        best_fit = 0
+        epoh_num = 0
+        visualisation = ''
 
-        # evolution
-        while best_fit < min_fitness and epoch_num < max_epochs:
-            epoch_num += 1
-            self.next_generation()
-            individ = self.find_best_individ()
+        while True:
+            epoh_num += 1
 
-            best_fit = individ.get_fitness()
-            visualization = individ.get_visualisation()
-            #print ('epoch:', epoch_num, 'fit:', best_fit, 'size:', len(self.population))
+            self.__next_generation()
 
-        return best_fit, epoch_num, visualization
+            self.population.clear()
+            self.population = copy.copy(self.next_population)
+            self.next_population.clear()
 
-    def crossing_over(self, desk1, desk2):
-        bit_num = random.randint(1, 23)
+            best_fit, visualisation = self.__find_max()
 
-        genome1 = copy.deepcopy(desk1.genome)
-        genome2 = copy.deepcopy(desk2.genome)
-
-        desk1.genome = genome1[:bit_num] + genome2[bit_num:]
-        desk2.genome = genome2[:bit_num] + genome1[bit_num:]
-
-        return desk1.genome, desk2.genome
-
-    def next_generation(self):
-        results_population = self.roullete_selection()
-
-        for ind in results_population:
-            # crossingover
-            if (random.random() > self.cross_prob):
-                parthner_num = random.randint(0, len(self.population) - 1)
-                parthner = self.population[parthner_num]
-                ind.genome, parthner.genome = self.crossing_over(ind, parthner)
-
-            # mutation
-            if (random.random() > self.mut_prob):
-                ind.mutation()
-
-        self.population.clear()
-        self.population = copy.copy(results_population)
-
-    def find_best_individ(self):
-        best_fit = 0;
-        for ind in self.population:
-            fit = ind.get_fitness()
-            if fit >= best_fit:
-                best_fit = fit
-                best_ind = ind
-        return best_ind
-
-    def roullete_selection(self):
-        results_population = []
-        fitnesses = []
-        fit_sum = 0;
-        for ind in self.population:
-            fit = ind.get_fitness()
-            fitnesses.append(fit)
-            fit_sum += fit
-
-        for num in range(len(self.population)):
-            rand_pos = random.random() * fit_sum
-            s = 0
-            for fit in fitnesses:
-                s += fit
-                if s > rand_pos:
-                    results_population.append(self.population[num])
+            if min_fitness != None:
+                if best_fit >= min_fitness:
+                    break
+            if max_epohs != None:
+                if epoh_num >= max_epohs:
                     break
 
-        return results_population
+        return best_fit, epoh_num, visualisation
+
+    def __roulette_selection(self):
+        prob = random.random()
+        prob_sum = 0
+        for individ in self.population:
+            prob_sum += individ.fitness / self.fit_sum
+            if prob_sum > prob:
+                return individ
+
+    def __next_generation(self):
+        self.fit_sum = 0
+        for individ in self.population:
+            self.fit_sum += individ.fitness
+
+        count = 0
+        self.next_population = []
+        while count < self.pop_size:
+            individ = copy.deepcopy(self.__roulette_selection())
+            self.next_population.append(individ)
+
+            if random.random() <= self.cross_prob:
+                spouse = copy.deepcopy(self.__roulette_selection())
+                individ.crossing_over(spouse)
+
+                if random.random() <= self.mut_prob:
+                    spouse.mutation()
+
+                self.next_population.append(spouse)
+                count += 1
+
+            if random.random() <= self.mut_prob:
+                individ.mutation()
+
+            self.next_population.append(individ)
+            count += 1
+
+    def __find_max(self):
+        max_fitness = 0
+        for individ in self.population:
+            if individ.fitness > max_fitness:
+                max_fitness = individ.fitness
+                visualisation = individ.get_visualisation()
+        return max_fitness, visualisation
+
 
 class Individ:
     def __init__(self):
-        self.set_random_genome()
-
-    def set_random_genome(self):
-        self.genome = ''
+        self.genome = []
         for i in range(8):
             gene = '{:03b}'.format(random.randint(0, 7))
-            self.genome += gene
+            self.genome.append(gene)
+        self.__calculate_fitness()
 
-    def get_fitness(self):
-        queens = self.get_queens_positions()
-        collisions = 0
-        for a in range(8):
-            for b in range(a + 1, 8):
-                if ((queens[a] == queens[b]) or (abs(queens[a] - queens[b]) == abs(a - b))) :
-                    collisions += 1
-                    break
+    def __get_queens_pos(self):
+        queens = []
+        for gene in self.genome:
+            pos = int(gene, 2)
+            queens.append(pos)
+        return queens
 
-        #fitness = pow(0.7, collisions)
-        if (collisions == 0):
-            fitness = 1
-        else:
-            fitness = 1 / (1 + collisions)
-        return fitness
+    def __calculate_fitness(self):
+        queens = self.__get_queens_pos()
+        penalty_score = 0
 
-    def get_queens_positions(self):
-        queen_positions = []
-        for i in range(8):
-            gene = self.genome[i * 3 : i * 3 + 3]
-            queen_positions.append(int(gene, 2))
-        return queen_positions
+        for i in range(7):
+            for j in range(7 - i):
+                a = i
+                b = j + i + 1
+                if queens[a] == queens[b]:
+                    penalty_score += 1
+                if abs(queens[b] - queens[a]) == abs(b - a):
+                    penalty_score += 1
 
-    def queen_pos_to_string_line(self, queen_pos):
-        line = ''
-        for i in range(8):
-            if i == queen_pos:
-                line += 'Q '
-            else:
-                line += '+ '
-        return line
+        self.fitness = 1 / (1 + penalty_score)
 
     def get_visualisation(self):
-        queen_positions = self.get_queens_positions()
-        visualisation = '\n'.join(self.queen_pos_to_string_line(q) for q in queen_positions)
+        queens = self.__get_queens_pos()
+        screen = []
+
+        for i in range(8):
+            line = []
+            for j in range(8):
+                line.append('+')
+            pos = queens[i]
+            line[pos] = 'Q'
+            screen.append(''.join(line))
+
+        visualisation = '\n'.join(screen)
         return visualisation
 
     def mutation(self):
-        genome = list(self.genome)
-        bit_num = random.randint(0, len(genome) - 1)
-        if genome[bit_num] == '0':
-            genome[bit_num] = '1'
+        gene_num = random.randint(0, 7)
+        gene = list(self.genome[gene_num])
+        bit_num = random.randint(0, 2)
+        if gene[bit_num] == '1':
+            gene[bit_num] = '0'
         else:
-            genome[bit_num] = '0'
+            gene[bit_num] = '1'
+        self.genome[gene_num] = ''.join(gene)
+        self.__calculate_fitness()
 
-        self.genome = ''.join(genome)
+    def crossing_over(self, spouse):
+        point = random.randint(1, 7)
+        for i in range(point):
+            gene = copy.deepcopy(spouse.genome[i])
+            spouse.genome[i] = copy.deepcopy(self.genome[i])
+            self.genome[i] = gene
+
+        spouse.__calculate_fitness()
+        self.__calculate_fitness()
