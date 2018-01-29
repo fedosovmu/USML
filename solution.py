@@ -18,7 +18,7 @@ for i in range(10):
     if (best_fit == 1):
         print("TRUE")
     else:
-        print("FALSE", round(math.log(best_fit, 0.7)))
+        print("FALSE")
     print("Iterations:", epoch_num)
     print("runtime:", runtime)
     print(visualization)

@@ -4,13 +4,13 @@ import copy
 
 
 class Solver_8_queens:
-    def __init__(self, pop_size=100, cross_prob=0.7, mut_prob=0.5):
+    def __init__(self, pop_size=150, cross_prob=0.5, mut_prob=0.5):
         random.seed()
         self.pop_size = pop_size
         self.cross_prob = cross_prob
         self.mut_prob = mut_prob
 
-    def solve(self, min_fitness=1, max_epochs=1000):
+    def solve(self, min_fitness=1, max_epochs=500):
         best_fit = 0
         epoch_num = 0
         visualization = ''
@@ -35,24 +35,28 @@ class Solver_8_queens:
 
         return best_fit, epoch_num, visualization
 
-    def crossingover(self, desk1, desk2):
+    def crossing_over(self, desk1, desk2):
         bit_num = random.randint(1, 23)
 
-        desk1.genome = desk1.genome[:bit_num] + desk2.genome[bit_num:]
-        desk2.genome = desk2.genome[:bit_num] + desk1.genome[bit_num:]
+        genome1 = copy.deepcopy(desk1.genome)
+        genome2 = copy.deepcopy(desk2.genome)
+
+        desk1.genome = genome1[:bit_num] + genome2[bit_num:]
+        desk2.genome = genome2[:bit_num] + genome1[bit_num:]
 
         return desk1.genome, desk2.genome
 
     def next_generation(self):
         results_population = self.roullete_selection()
 
-        # mutation
         for ind in results_population:
+            # crossingover
             if (random.random() > self.cross_prob):
                 parthner_num = random.randint(0, len(self.population) - 1)
                 parthner = self.population[parthner_num]
-                ind.genome, parthner.genome = self.crossingover(ind, parthner)
+                ind.genome, parthner.genome = self.crossing_over(ind, parthner)
 
+            # mutation
             if (random.random() > self.mut_prob):
                 ind.mutation()
 
@@ -101,15 +105,17 @@ class Individ:
     def get_fitness(self):
         queens = self.get_queens_positions()
         collisions = 0
-        fit = ''
         for a in range(8):
             for b in range(a + 1, 8):
-                if queens[a] == queens[b]:
+                if ((queens[a] == queens[b]) or (abs(queens[a] - queens[b]) == abs(a - b))) :
                     collisions += 1
-                if abs(queens[a] - queens[b]) == abs(a - b):
-                    collisions += 1
+                    break
 
-        fitness = pow(0.7, collisions)
+        #fitness = pow(0.7, collisions)
+        if (collisions == 0):
+            fitness = 1
+        else:
+            fitness = 1 / (1 + collisions)
         return fitness
 
     def get_queens_positions(self):
