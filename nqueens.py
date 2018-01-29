@@ -9,7 +9,7 @@ class Solver_8_queens:
         self.cross_prob = cross_prob
         self.mut_prob = mut_prob
 
-    def solve(self, min_fitness=1, max_epohs=250):
+    def solve(self, min_fitness=1, max_epohs=10000):
         if self.pop_size == 0:
             return 0, 0, ""
 
@@ -88,15 +88,25 @@ class Solver_8_queens:
 
 class Individ:
     def __init__(self):
-        self.genome = []
+        self.genome = ''
+        self.queens = []
         for i in range(8):
             gene = '{:03b}'.format(random.randint(0, 7))
-            self.genome.append(gene)
+            self.queens.append(gene)
+            self.genome += gene
         self.__calculate_fitness()
 
+    def get_queens_bin(self):
+        queen_positions = []
+        for i in range(8):
+            gene = self.genome[i * 3: i * 3 + 3]
+            queen_positions.append(gene)
+        return queen_positions
+
     def __get_queens_pos(self):
+        genes = self.get_queens_bin()
         queens = []
-        for gene in self.genome:
+        for gene in genes:
             pos = int(gene, 2)
             queens.append(pos)
         return queens
@@ -116,38 +126,42 @@ class Individ:
 
         self.fitness = 1 / (1 + penalty_score)
 
-    def get_visualisation(self):
-        queens = self.__get_queens_pos()
-        screen = []
-
+    def queen_pos_to_string_line(self, queen_pos):
+        line = ''
         for i in range(8):
-            line = []
-            for j in range(8):
-                line.append('+')
-            pos = queens[i]
-            line[pos] = 'Q'
-            screen.append(''.join(line))
+            if i == queen_pos:
+                line += 'Q '
+            else:
+                line += '+ '
+        return line
 
-        visualisation = '\n'.join(screen)
+    def get_visualisation(self):
+        queen_positions = self.__get_queens_pos()
+        visualisation = '\n'.join(self.queen_pos_to_string_line(q) for q in queen_positions)
         return visualisation
+
 
     def mutation(self):
         gene_num = random.randint(0, 7)
-        gene = list(self.genome[gene_num])
+        queens = self.get_queens_bin()
+        gene = list(queens[gene_num])
         bit_num = random.randint(0, 2)
         if gene[bit_num] == '1':
             gene[bit_num] = '0'
         else:
             gene[bit_num] = '1'
-        self.genome[gene_num] = ''.join(gene)
+        queens[gene_num] = ''.join(gene)
+        self.genome = ''.join(queens)
         self.__calculate_fitness()
 
     def crossing_over(self, spouse):
-        point = random.randint(1, 7)
-        for i in range(point):
-            gene = copy.deepcopy(spouse.genome[i])
-            spouse.genome[i] = copy.deepcopy(self.genome[i])
-            self.genome[i] = gene
+        bit_num = random.randint(1, 23)
+
+        genome1 = copy.deepcopy(self.genome)
+        genome2 = copy.deepcopy(spouse.genome)
+
+        self.genome = genome1[:bit_num] + genome2[bit_num:]
+        spouse.genome = genome2[:bit_num] + genome1[bit_num:]
 
         spouse.__calculate_fitness()
         self.__calculate_fitness()

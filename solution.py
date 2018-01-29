@@ -6,7 +6,7 @@ print('Python version:', sys.version)
 import nqueens as nq
 
 
-for i in range(10):
+for i in range(92):
     print("Solution:", i+1)
     start_time = time.time()
     solver = nq.Solver_8_queens()
