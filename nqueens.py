@@ -4,13 +4,13 @@ import copy
 
 
 class Solver_8_queens:
-    def __init__(self, pop_size=150, cross_prob=0.75, mut_prob=0.05):
+    def __init__(self, pop_size=100, cross_prob=0.7, mut_prob=0.5):
         random.seed()
         self.pop_size = pop_size
         self.cross_prob = cross_prob
         self.mut_prob = mut_prob
 
-    def solve(self, min_fitness=1, max_epochs=200):
+    def solve(self, min_fitness=1, max_epochs=1000):
         best_fit = 0
         epoch_num = 0
         visualization = ''
@@ -21,6 +21,8 @@ class Solver_8_queens:
             individ = Individ()
             self.population.append(individ)
 
+        best_fit = self.find_best_individ().get_fitness()
+
         # evolution
         while best_fit < min_fitness and epoch_num < max_epochs:
             epoch_num += 1
@@ -29,16 +31,33 @@ class Solver_8_queens:
 
             best_fit = individ.get_fitness()
             visualization = individ.get_visualisation()
-            genome = individ.get_queens_positions()
-            print ('epoch:', epoch_num, 'fit:', best_fit, 'genome:', genome, 'size:', len(self.population))
+            #print ('epoch:', epoch_num, 'fit:', best_fit, 'size:', len(self.population))
 
         return best_fit, epoch_num, visualization
 
+    def crossingover(self, desk1, desk2):
+        bit_num = random.randint(1, 23)
+
+        desk1.genome = desk1.genome[:bit_num] + desk2.genome[bit_num:]
+        desk2.genome = desk2.genome[:bit_num] + desk1.genome[bit_num:]
+
+        return desk1.genome, desk2.genome
+
     def next_generation(self):
-        self.roullete_selection()
-        for ind in self.population:
+        results_population = self.roullete_selection()
+
+        # mutation
+        for ind in results_population:
+            if (random.random() > self.cross_prob):
+                parthner_num = random.randint(0, len(self.population) - 1)
+                parthner = self.population[parthner_num]
+                ind.genome, parthner.genome = self.crossingover(ind, parthner)
+
             if (random.random() > self.mut_prob):
                 ind.mutation()
+
+        self.population.clear()
+        self.population = copy.copy(results_population)
 
     def find_best_individ(self):
         best_fit = 0;
@@ -67,8 +86,7 @@ class Solver_8_queens:
                     results_population.append(self.population[num])
                     break
 
-        self.population.clear()
-        self.population = copy.copy(results_population)
+        return results_population
 
 class Individ:
     def __init__(self):
@@ -101,7 +119,7 @@ class Individ:
             queen_positions.append(int(gene, 2))
         return queen_positions
 
-    def queen_pos_to_line(self, queen_pos):
+    def queen_pos_to_string_line(self, queen_pos):
         line = ''
         for i in range(8):
             if i == queen_pos:
@@ -112,7 +130,7 @@ class Individ:
 
     def get_visualisation(self):
         queen_positions = self.get_queens_positions()
-        visualisation = '\n'.join(self.queen_pos_to_line(q) for q in queen_positions)
+        visualisation = '\n'.join(self.queen_pos_to_string_line(q) for q in queen_positions)
         return visualisation
 
     def mutation(self):
